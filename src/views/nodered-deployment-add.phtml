@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IEAM - NodeRed Edge Nodes</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap-theme.min.css">	
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->  
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<link rel="stylesheet" href="/resources/demos/style.css">
+	<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+	
+	 <!-- FORM STYLE -->
+	  <style>
+	  
+		* {
+		  box-sizing: border-box;
+		}
+
+		input[type=text], select, textarea {
+		  width: 100%;
+		  padding: 12px;
+		  border: 1px solid #ccc;
+		  border-radius: 4px;
+		  resize: vertical;
+		}
+
+		label {
+		  padding: 12px 12px 12px 0;
+		  display: inline-block;
+		}
+
+		input[type=submit] {
+		  background-color: #4CAF50;
+		  color: white;
+		  padding: 12px 20px;
+		  border: none;
+		  border-radius: 4px;
+		  cursor: pointer;
+		  float: right;
+		}
+
+		input[type=submit]:hover {
+		  background-color: #45a049;
+		}
+
+		.container_form {
+		  border-radius: 5px;
+		  background-color: #f2f2f2;
+		  padding: 20px;
+		}
+
+		.col-25 {
+		  float: left;
+		  width: 25%;
+		  margin-top: 6px;
+		}
+
+		.col-75 {
+		  float: left;
+		  width: 75%;
+		  margin-top: 6px;
+		}
+
+		/* Clear floats after the columns */
+		.row:after {
+		  content: "";
+		  display: table;
+		  clear: both;
+		}
+		
+		.row {
+		  padding-right: 20px;
+		}
+
+		/* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+		@media screen and (max-width: 600px) {
+		  .col-25, .col-75, input[type=submit] {
+			width: 100%;
+			margin-top: 0;
+		  }
+		}
+	  </style>
+	  
+	  <style>
+		.overlay{
+			display: none;
+			position: fixed;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			z-index: 999;
+			background: rgba(255,255,255,0.8) url("/images/loader.gif") center no-repeat;
+			}
+		
+		body{
+			text-align: center;
+			}
+		
+		/* Turn off scrollbar when body element has the loading class */
+		body.loading{
+			overflow: hidden;   
+			}
+		
+		/* Make spinner image visible when body element has the loading class */
+		body.loading .overlay{
+			display: block;
+			}
+	  </style>
+  
+  </head>
+ 	
+  <script>
+	
+	$(document).on({
+		
+		ajaxStart: function(){
+			$("body").addClass("loading"); 
+		},
+		ajaxStop: function(){ 
+			$("body").removeClass("loading"); 
+		}    
+	});
+	
+    $(document).ready(function() {
+		
+		$('.navbar-brand').on('click', function(evt){
+							
+			$("body").addClass("loading"); 			   
+			//evt.preventDefault(); 
+			});
+			
+		$('.btn').on('click', function(evt){
+							
+			$("body").addClass("loading"); 			   
+			//evt.preventDefault(); 
+			});
+			
+		$( "#add_button" ).click(function(e) {
+			
+			$("body").addClass("loading"); 	
+			
+			e.preventDefault();
+			$("#controllo").val("SUBMIT");
+			$("#add_from").submit();
+			});
+		
+		
+		$('.add_more').click(function(e){
+						
+			e.preventDefault();
+			$("#more_files").before("<div class=\"row\"><div class=\"col-25\"></div><div class=\"col-75\" style=\"text-align: left\"><input name=\"item_file[]\" type=\"file\"/></div></div>");
+			
+			$("body").removeClass("loading");
+			});
+		});
+  
+  </script>
+  
+  <body style="padding-top: 95px">
+    
+	<div class="overlay"></div>
+	
+    <div class="container">
+      <div class="row">
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+          <a class="navbar-brand" href="<?php echo $data['router']->pathFor('home'); ?>">Home </a>
+		  <a class="navbar-brand" href="<?php echo $data['router']->pathFor('nodered-data', array('node' => $data["node"], 'url'=> $data["url"], 'version'=> $data["version"], 'arch'=> $data["arch"]) ); ?>">NodeRed Deployments</a>
+        </nav>
+      </div>
+    </div>
+    
+	<!-- content area -->
+    <div class="container" style="text-align: center">
+		
+		<?php if (!isset($_POST['controllo'])): ?>
+		<div class="container_form">
+		<form id="add_from" enctype="multipart/form-data" method="post" action="<?php echo $data['router']->pathFor('nodered-deployment-add', array('node' => $data["node"], 'url'=> $data["url"], 'version'=> $data["version"], 'arch'=> $data["arch"] ) ); ?>">
+			
+			<input type=hidden name="controllo" id="controllo" value=""> 
+			
+			<div class="row">
+				<div class="col-25">
+					<label for="deploy_id">Deploy ID</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="deploy_id" name="deploy_id" readonly value="<?php echo "ID".round(microtime(true)*1000); ?>">
+				</div>
+			</div>
+	  
+			<div class="row">
+				<div class="col-25">
+					<label for="deploy_name">Version</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="deploy_name" name="deploy_name" placeholder="1.0">
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-25">
+					<label for="deploy_description">Description</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="deploy_description" name="deploy_description" placeholder="enter deploy description">
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-25">
+					<label for="deploy_username">Console UserName</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="deploy_username" name="deploy_username" placeholder="enter console UserName according settings.js">
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-25">
+					<label for="deploy_password">Console Password</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="deploy_password" name="deploy_password" placeholder="enter console Password according settings.js">
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-25">					
+					<label for="deploy_files">Files</label>
+				</div>
+				<div class="col-75" style="text-align: left">
+					<input type="text" readonly value="Add settings.js, flows.json, flows_cred.json or x509 certificate...">
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-25">					
+				</div>				
+				<div class="col-75" style="text-align: left">
+					<input name="item_file[]" type="file" />
+				</div>
+			</div>
+			
+			<div id="more_files" class="row">
+				<div class="col-25"></div>
+				<div class="col-75" style="text-align: left">					
+					<button role="button" class="btn btn-success add_more">Add More Files</button>
+				</div>
+			</div>
+			
+			<div class="row">
+				
+				<div style="margin-left: auto; margin-right: 0;">
+					
+					<table>
+					<tr>
+					<td>
+					<a role="button" class="btn btn-danger" href="<?php echo $data['router']->pathFor('nodered-data', array('node' => $data["node"], 'url'=> $data["url"], 'version'=> $data["version"], 'arch'=> $data["arch"] ) ); ?>">Cancel</a>
+					</td>
+
+					<td>
+					<a id="add_button" role="button" class="btn btn-success" href="#" id="add_deployment">Add</a>
+					</td>
+					</tr>
+					</table>
+				
+				</div>
+			</div>
+			
+		</form>
+		</div>
+		<?php else: ?>
+		<div class="container">
+			<div class="alert alert-success" role="alert">
+				<table style="width: 100%">
+				<tr>
+				<td>
+				<strong>Success!</strong> The Deployment is succefully created or updated 
+				</td>
+				</tr>
+				<tr>
+				<td>
+				<a role="button" class="btn btn-success" href="<?php echo $data['router']->pathFor('nodered-data', array('node' => $data["node"], 'url'=> $data["url"], 'version'=> $data["version"], 'arch'=> $data["arch"]) ); ?>">Return to Deployments List</a>
+				</td>
+				</tr>
+				</table>
+			</div>
+		</div>        
+		<?php endif; ?> 
+    
+		
+    </div>        
+    <!-- content area ends-->
+      
+    <!-- footer -->
+    <div class="container">
+      <p class="text-center">
+        <a href="www.footer.com" role="button" class="btn btn-default btn">Info</a>
+      </p>
+    </div> 
+    <!-- footer ends -->
+
+     
+  </body>
+</html>

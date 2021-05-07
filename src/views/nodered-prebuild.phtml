@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IEAM - NodeRed Edge Nodes</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap-theme.min.css">	
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->  
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<link rel="stylesheet" href="/resources/demos/style.css">
+	<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+	
+	<style>
+    .overlay{
+        display: none;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 999;
+        background: rgba(255,255,255,0.8) url("/images/loader.gif") center no-repeat;
+		}
+    
+	body{
+        text-align: center;
+		}
+    
+	/* Turn off scrollbar when body element has the loading class */
+    body.loading{
+        overflow: hidden;   
+		}
+    
+	/* Make spinner image visible when body element has the loading class */
+    body.loading .overlay{
+        display: block;
+		}
+	</style>
+	
+  </head>
+  
+  <script>
+		
+    $(document).ready(function() {
+		
+		$('.navbar-brand').on('click', function(evt){
+							
+			$("body").addClass("loading"); 			   
+			//evt.preventDefault(); 
+			});
+			
+		$("#provisioning-dialog").dialog({
+			height: 480,
+			width: 640,
+			modal: true,
+			open: function(event, ui){
+								
+				let wait = setInterval( function(){
+					 
+					 <?php
+					 
+					 $object_id = $data["deployer_node"].".".$data["url"]."-deployment";					 					 
+					 ?>
+					 
+					 $.ajax(
+					  {
+						  type: "get",
+						  url: "<?php echo $data['router']->pathFor('nodered-check_deployment', array( 'object_type' => "deploy.tar", 'object_id' => $object_id, 'deployer_node' => $data["deployer_node"] ) );?>",
+						  crossDomain: true, 
+						  cache: false,
+						  statusCode: {
+							
+							200: function() {
+								
+								clearInterval(wait);
+								$("#messages").after("<div class=\"row\">Instance provisioned wait deployment</div>");
+									
+								setTimeout( function(){
+										
+									$('#provisioning-dialog').dialog('close');					
+									$("body").addClass("loading"); 
+									
+									$(window.location)[0].replace("<?php echo $data['router']->pathFor('nodered-build', array( 'object_id'=> $data["object_id"], 'node'=> $data["node"], 'url'=> $data["url"], 'version'=> $data["version"], 'arch'=> $data["arch"]) ); ?>");
+										
+									},10000);
+									
+								},
+								
+							404: function () {
+								
+								//alert('page not found');								
+								}
+						   },
+						  async: false
+					  });
+					  
+					//
+										
+					},3000);
+			}
+		});
+
+		});
+  
+  </script>
+  
+  <body style="padding-top: 95px">
+	
+	<div class="overlay"></div>
+	
+    <div class="container">
+      <div class="row">
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+          <a class="navbar-brand" href="<?php echo $data['router']->pathFor('home'); ?>">Home </a>
+		  <a class="navbar-brand" href="<?php echo $data['router']->pathFor('nodered'); ?>">NodeRed </a>		 
+          <a class="navbar-brand" href="<?php echo $data['router']->pathFor('config'); ?>">Configuration </a>		  
+        </nav>
+      </div>
+    </div>
+    
+	<!-- content area -->
+    <div class="container" style="text-align: center">
+    <!--  <p>
+        <a role="button" class="btn btn-success" href="www.ibm.com">Add new project</a>
+      </p>      
+	-->
+		<div id="provisioning-dialog" title="Basic dialog">
+		
+			
+			<p>Provisioning</p>
+			
+			<p>
+			
+			<div id="messages" class="row">
+			
+			</p>
+			
+			</div>
+			
+		</div>
+				
+    </div>        
+    <!-- content area ends-->
+    	
+    <!-- footer -->
+    <div class="container" style="padding-top: 40px">		
+		<div class="row">
+        
+      </div>
+    </div> 
+    <!-- footer ends -->
+
+     
+  </body>
+</html>
