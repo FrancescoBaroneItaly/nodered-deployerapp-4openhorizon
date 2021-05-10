@@ -38,7 +38,7 @@ $container['ieam_api'] = function($container) {
 	  $config_contents = file_get_contents($filename);
 	  $json = json_decode($config_contents,true);
 	  
-	  $config['ieam_api'] = array( 'baseurl' => $json["ieam_baseurl"], 'username' => $json["ieam_username"], 'password' => $json["ieam_password"]);
+	  $config['ieam_api'] = array( 'baseurl' => $json["ieam_baseurl"], 'orgid' => $json["ieam_orgid"], 'username' => $json["ieam_username"], 'password' => $json["ieam_password"]);
 	  }
 	  
 	return $config['ieam_api'];
@@ -101,7 +101,7 @@ $app->get('/config', function (Request $request, Response $response) {
 	  }
 	  
   $response = $this->view->render($response, 'config.phtml', [
-    'router' => $this->router, 'ieam_baseurl' => $json["ieam_baseurl"], 'ieam_username' => $json["ieam_username"], 'ieam_password' => $json["ieam_password"]
+    'router' => $this->router, 'ieam_baseurl' => $json["ieam_baseurl"], 'ieam_orgid' => $json["ieam_orgid"], 'ieam_username' => $json["ieam_username"], 'ieam_password' => $json["ieam_password"]
   ]);
   return $response;
 })->setName('config');
@@ -114,7 +114,7 @@ $app->post('/config/save', function (Request $request, Response $response, $args
   //----------------------------------------------
   $filename = "/tmp/ieam_config.json";
   
-  $json = json_encode(array('ieam_baseurl' => $form_data["ieam_baseurl"], 'ieam_username' => $form_data["ieam_username"], 'ieam_password' => $form_data["ieam_password"], 'created' => date("Y-m-d h:i:sa") ));
+  $json = json_encode(array('ieam_baseurl' => $form_data["ieam_baseurl"], 'ieam_orgid' => $form_data["ieam_orgid"],  'ieam_username' => $form_data["ieam_username"], 'ieam_password' => $form_data["ieam_password"], 'created' => date("Y-m-d h:i:sa") ));
     
   file_put_contents($filename, $json); 
 	
@@ -137,10 +137,6 @@ $app->get('/nodered', function (Request $request, Response $response) {
 		
 	return $response;
 	}
-	
-  //$username='wwsc/iamapikey';
-  //$password='nejoeMsK9_5GBA5EoHgNcatH3pvzUJU0Iu945ORlSCzc';
-  //$URL='https://cp-console.ieam42-edge-8e873dd4c685acf6fd2f13f4cdfb05bb-0000.us-south.containers.appdomain.cloud/edge-exchange/v1/catalog/wwsc/services';
   
   $t1=round(microtime(true) * 1000);
   
@@ -155,7 +151,7 @@ $app->get('/nodered', function (Request $request, Response $response) {
   echo("<script>console.log('PHP WS TARGET: " . $this['ieam_api']['baseurl'] . "');</script>");
   
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/catalog/wwsc/services");
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/catalog/".$this['ieam_api']['orgid']."/services");
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -167,10 +163,12 @@ $app->get('/nodered', function (Request $request, Response $response) {
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  //curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);//"/ess-cert/cert.pem");
   
   $services=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
+  echo("<script>console.log('PHP WS RC: " . $status_code . "');</script>");
   
   $time_namelookup = curl_getinfo($ch,   CURLINFO_NAMELOOKUP_TIME );
   $time_connect = curl_getinfo($ch,   CURLINFO_CONNECT_TIME  );
@@ -187,7 +185,7 @@ $app->get('/nodered', function (Request $request, Response $response) {
   echo("<script>console.log('PHP WS CURLINFO_REDIRECT_TIME: " . $time_redirect  . "');</script>");
   echo("<script>console.log('PHP WS CURLINFO_STARTTRANSFER_TIME: " . $time_starttransfer  . "');</script>");
   echo("<script>console.log('PHP WS CURLINFO_TOTAL_TIME: " . $time_total  . "');</script>");
-  
+   
   curl_close ($ch);
   
   $t2=round(microtime(true) * 1000);
@@ -240,101 +238,7 @@ $app->get('/nodered', function (Request $request, Response $response) {
 	if($isNodered){
 		
 		$deployer_node = $_ENV["HZN_DEVICE_ID"];
-		
-		$t1=round(microtime(true) * 1000);
-		
-		//------------------------
-		//modify node_policy
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/nodes/".$deployer_node."/policy");
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
-		curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-		//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-		//curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-		//scurl_setopt($ch, CURLOPT_TLSAUTH_USERNAME, $username);
-		//curl_setopt($ch, CURLOPT_TLSAUTH_PASSWORD, $password);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-		curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
-		
-		$_policy=curl_exec ($ch);    	
-		$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
-		curl_close ($ch);
-		
-		$t2=round(microtime(true) * 1000);
-		echo("<script>console.log('PHP WS TIMING: " . ($t2-$t1) . "');</script>");
-		
-		if($status_code==200){
 			
-			$policy = json_decode($_policy, true);			
-			//var_dump($_policy);
-			
-			$new_properties = array();
-			$properties = $policy["properties"];
-			
-			foreach($properties as $property){
-				
-				//var_dump($property);
-				//$property = json_decode($_property, true);				
-				if($property["name"]== $_service["url"]."-runtime"){
-					
-					//echo "NODERED=".$property["value"];
-					$property["value"]="0";
-					}
-					
-				array_push($new_properties, $property);
-				}
-				
-			//update policy
-			
-			$new_policy = array();
-			$new_policy["properties"] = $new_properties;
-			$new_policy["constraints"] = $policy["constraints"];			
-			
-			ob_start();
-  
-			echo json_encode($new_policy);
-			$post = ob_get_contents();
-    
-			ob_end_clean();
-			
-			//var_dump($post);
-			$t1=round(microtime(true) * 1000);
-			
-			$headers = [];
-			$headers[] = "Authorization: Basic {$credentials}";
-			$headers[] = 'Content-Type: application/json';
-			$headers[] = 'Cache-Control: no-cache';
-			$headers[] = 'Content-Length: '.strlen($post);
-			
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/nodes/".$deployer_node."/policy");
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");			
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-			curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-			//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-			//curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-			//scurl_setopt($ch, CURLOPT_TLSAUTH_USERNAME, $username);
-			//curl_setopt($ch, CURLOPT_TLSAUTH_PASSWORD, $password);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-			//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-			curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
-			
-			curl_exec ($ch);    	
-			$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
-			curl_close ($ch);
-			
-			$t2=round(microtime(true) * 1000);
-			echo("<script>console.log('PHP WS TIMING: " . ($t2-$t1) . "');</script>");
-			//echo "POLICY ".$status_code;
-			}
-		//------------------------
 		
 		$service = array();
 		array_push($service, $_service["url"]);
@@ -346,25 +250,7 @@ $app->get('/nodered', function (Request $request, Response $response) {
 				
 		array_push($services, $service);
 		}
-	/*
-	$properties = $_node["properties"];
 	
-	foreach($properties as $property) {
-		
-		if($property["name"]=="nodered-v2-runtime" && $property["value"]=="1"){
-			
-			//trovato node con nodered runtime
-			$node= array();
-			array_push($node, $_node["name"]);
-			array_push($node, $_node["orgid"]);
-			array_push($node, $_node["nodeType"]);
-			array_push($node, $_node["owner"]);
-			array_push($node, $this->router->pathFor('nodeservice', array('id' => htmlspecialchars($_node['name'], ENT_COMPAT, 'UTF-8'), 'service' => 'nodered' )) );
-			
-			array_push($nodes, $node);
-			}
-		}
-	*/
 	}
 	
   //$nodes = [["aaa","bbb","ccc","ddd",""]];
@@ -402,9 +288,43 @@ $app->get('/node-service/{url}/{version}/{arch}', function (Request $request, Re
   $headers[] = "Authorization: Basic {$credentials}";
   $headers[] = 'Content-Type: application/x-www-form-urlencoded';
   $headers[] = 'Cache-Control: no-cache';
+  
+  //---------------------------------------------------------------
+  //DELETE DEPLOYER NODE POLICY
+  
+  $deployer_node = $_ENV["HZN_DEVICE_ID"];
+  
+  $headers = [];
+  $headers[] = "Authorization: Basic {$credentials}";
+  $headers[] = 'Content-Type: application/json';
+  $headers[] = 'Cache-Control: no-cache';
 
+  $ch = curl_init();  
+  ///orgs/{orgid}/business/policies/{policy}
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/business/policies/nodered-".$deployer_node."-deployer.deployment.policy" );	
+  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");  
+  curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+  //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+  //curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+  //scurl_setopt($ch, CURLOPT_TLSAUTH_USERNAME, $username);
+  //curl_setopt($ch, CURLOPT_TLSAUTH_PASSWORD, $password);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+  //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
+ 
+  curl_exec ($ch);    	  
+  $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
+  curl_close ($ch);
+  
+  //echo "DELETE policy = ".$status_code;
+  //----------------------------------------------------
+  
+  
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/node-details");
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/node-details");
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -416,7 +336,7 @@ $app->get('/node-service/{url}/{version}/{arch}', function (Request $request, Re
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
   
   $nodes=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -510,15 +430,61 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
   //------------------------
   $deployer_node = $_ENV["HZN_DEVICE_ID"];
   
-  //modify node_policy
+  //-----------------------------------
+  //BUSINESS POLICY ????
+  ob_start();
+  
+  echo"{";  
+  echo"  \"label\": \"nodered-".$deployer_node."-deployer.deployment.policy\",";
+  echo"  \"description\": \"\",";
+  echo"  \"service\": {";
+  echo"    \"name\": \"".$url."\",";
+  echo"    \"org\": \"".$this['ieam_api']['orgid']."\",";
+  echo"    \"arch\": \"".$arch."\",";
+  echo"    \"serviceVersions\": [";
+  echo"      {";
+  echo"        \"version\": \"".$version."\",";
+  echo"        \"priority\": {";
+  echo"          \"priority_value\": 1,";
+  echo"          \"retries\": 2,";
+  echo"          \"retry_durations\": 600";
+  echo"        },";
+  echo"        \"upgradePolicy\": {}";
+  echo"      }";
+  echo"    ],";
+  echo"    \"nodeHealth\": {}";
+  echo"  },";
+  echo"  \"constraints\": [";
+  echo"    \"nodered-deployernode == ".$deployer_node."\"";
+  echo"  ],";
+  echo"  \"userInput\": [";
+  echo"    {";
+  echo"      \"serviceOrgid\": \"".$this['ieam_api']['orgid']."\",";
+  echo"      \"serviceUrl\": \"".$url."\",";
+  echo"      \"serviceArch\": \"".$arch."\",";
+  echo"      \"inputs\": []";
+  echo"    }";
+  echo"  ]";  
+  echo"}";
+  
+  $post = ob_get_contents();
+		
+  ob_end_clean();
+	 
+  //var_dump($post);
+  //....
+	 
+  
   $headers = [];
   $headers[] = "Authorization: Basic {$credentials}";
-  $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+  $headers[] = 'Content-Type: application/json';
   $headers[] = 'Cache-Control: no-cache';
-		
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/nodes/".$deployer_node."/policy");
-  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+
+  $ch = curl_init();  
+  ///orgs/{orgid}/business/policies/{policy}
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/business/policies/nodered-".$deployer_node."-deployer.deployment.policy" );	
+  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
   curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -529,85 +495,24 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
-	
-  $_policy=curl_exec ($ch);    	
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
+ 
+  curl_exec ($ch);    	  
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
   curl_close ($ch);
-    
-  if($status_code==200){
-		
-		$policy = json_decode($_policy, true);			
-		//var_dump($_policy);
-		
-		$new_properties = array();
-		$properties = $policy["properties"];
-		
-		foreach($properties as $property){
-			
-			//var_dump($property);
-			//$property = json_decode($_property, true);				
-			if($property["name"]== $url."-runtime"){
-				
-				//echo "NODERED=".$property["value"];
-				$property["value"]="2";
-				}
-				
-			array_push($new_properties, $property);
-			}
-				
-		//update policy
-		
-		$new_policy = array();
-		$new_policy["properties"] = $new_properties;
-		$new_policy["constraints"] = $policy["constraints"];			
-		
-		ob_start();
+	  
+  //echo "STATUS CODE POLICY DEPLOYMENT for DEPLOYER = ".$status_code;  
+  //----------------------------------------------
+	
+  //-----------------------------------
   
-		echo json_encode($new_policy);
-		$post = ob_get_contents();
-    
-		ob_end_clean();
-		
-		//var_dump($post);
-		
-		$headers = [];
-		$headers[] = "Authorization: Basic {$credentials}";
-		$headers[] = 'Content-Type: application/json';
-		$headers[] = 'Cache-Control: no-cache';
-		$headers[] = 'Content-Length: '.strlen($post);
-		
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/nodes/".$deployer_node."/policy");
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");			
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-		curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-		//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-		//curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-		//scurl_setopt($ch, CURLOPT_TLSAUTH_USERNAME, $username);
-		//curl_setopt($ch, CURLOPT_TLSAUTH_PASSWORD, $password);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-		curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
-		
-		curl_exec ($ch);    	
-		$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
-		curl_close ($ch);
-		
-		//echo "POLICY ".$status_code;
-		}
-  //------------------------
-		
   $headers = [];
   $headers[] = "Authorization: Basic {$credentials}";
   $headers[] = 'Content-Type: application/x-www-form-urlencoded';
   $headers[] = 'Cache-Control: no-cache';
 
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."?all_objects=true" );
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."?all_objects=true" );
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -619,7 +524,7 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
   
   //$socket = '/var/run/horizon/essapi.sock';
   //curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socket);
@@ -668,7 +573,7 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
 	foreach($deploy_id as $item) {
 		
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/".$item."/data");
+		curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$item."/data");
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
 		curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -680,7 +585,7 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-		curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+		curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 		
 		//$socket = '/var/run/horizon/essapi.sock';
 		//curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socket);
@@ -733,41 +638,7 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
 			}
 		}
 	}
-    
-  /*
-  USING FILESYSTEM
-  $folder = "/".$node."_".$url."_".$version."_".$arch;
   
-  createPath($this['nodered_deployment_path'].$folder);
-  
-  $deployment_files = glob($this['nodered_deployment_path'].$folder."/*.json");
-  
-  foreach($deployment_files as $filename) {
-	
-	$deployment_file_content = file_get_contents($filename);
-	$json = json_decode($deployment_file_content,true);
-	
-	array_push($deployments, $json);
-	}
-	
-  */
-  /*
-  $filename = $this['nodered_deployment_path'].$folder."/".$node."_".$url."_".$version."_".$arch.".json";
-  
-  if (!is_file($filename)) {
-	
-	$default_contents = array();
-	
-	$json = json_encode(array('data' => $default_contents, 'created' => date("Y-m-d h:i:sa") ));
-    
-	file_put_contents($filename, $json); 
-	}
-	
-  $deployment_file = file_get_contents($filename);
-  $json = json_decode($deployment_file,true);
-	
-  $deployments = $json["data"];
-  */
   $response = $this->view->render($response, 'nodered-data.phtml', [
     'router' => $this->router, 'deploy_id_active' => $deploy_id_active, 'deployments' => $deployments, 'url' => $url, 'arch' => $arch, 'version' => $version, 'node' => $node
   ]);
@@ -925,7 +796,7 @@ $app->post('/deployments/add/{node}/{url}/{version}/{arch}', function (Request $
   $headers[] = 'Cache-Control: no-cache';
 
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/".$object_id );
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$object_id );
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
   curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
@@ -938,7 +809,7 @@ $app->post('/deployments/add/{node}/{url}/{version}/{arch}', function (Request $
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
   
   $mms=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -991,7 +862,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
   //USING MMS
   $object_type = "deployment-".$node."_".$url."_".$version."_".$arch;
   
-  //echo("<script>console.log('PHP: [".$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/deploy_".$object_id."/data]". "');</script>");  
+  //echo("<script>console.log('PHP: [".$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/deploy_".$object_id."/data]". "');</script>");  
   $credentials = base64_encode($this['ieam_api']['username'].":".$this['ieam_api']['password']);
   
   //------------------------
@@ -1002,7 +873,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
   $headers[] = 'Cache-Control: no-cache';
 		
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/deploy_".$object_id."/data" );  
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/deploy_".$object_id."/data" );  
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -1014,7 +885,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 	
   $_mms=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1102,7 +973,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	echo "{";	
 	echo "  \"objectID\": \"".$deployer_node.".".$url."-deployment\",";
 	echo "  \"objectType\": \"deploy.tar\",";
-	echo "  \"destinationOrgID\": \"wwsc\",";
+	echo "  \"destinationOrgID\": \"".$this['ieam_api']['orgid']."\",";
 	echo "  \"destinationPolicy\": {";
 	echo "	\"properties\": [],";
 	echo "	\"constraints\": [";
@@ -1110,7 +981,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	echo "		],";
 	echo "	\"services\": [";
 	echo "	  {";
-	echo "		\"orgID\": \"wwsc\",";
+	echo "		\"orgID\": \"".$this['ieam_api']['orgid']."\",";
 	echo "		\"arch\": \"".$arch."\",";
 	echo "		\"serviceName\": \"".$url."\",";
 	echo "		\"version\": \"".$version."\"";
@@ -1164,8 +1035,8 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	$headers[] = 'Cache-Control: no-cache';
 
 	$ch = curl_init();
-	//curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/deploy.tar/edgenode01.nodered-v2-deployment" );
-	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/deploy.tar/".$deployer_node.".".$url."-deployment" );	
+	//curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/edgenode01.nodered-v2-deployment" );
+	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/".$deployer_node.".".$url."-deployment" );	
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
 	curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
@@ -1178,7 +1049,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 	//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-	curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+	curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 	 
 	$mms=curl_exec ($ch);    	
 	$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1276,7 +1147,7 @@ $app->put('/nodered-upload_deployment/{deploy_target_link}/data', function (Requ
 	$headers[] = 'Cache-Control: no-cache';
 
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/".$object_id );
+	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$object_id );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
 	curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
@@ -1289,7 +1160,7 @@ $app->put('/nodered-upload_deployment/{deploy_target_link}/data', function (Requ
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 	//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-	curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+	curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 	 
 	$mms=curl_exec ($ch);    	
 	$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1333,7 +1204,7 @@ $app->get('/nodered-check_deployment/{object_type}/{object_id}/{deployer_node}',
 	$headers[] = 'Cache-Control: no-cache';
 		
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/".$object_id."/destinations" );  
+	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$object_id."/destinations" );  
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
 	curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -1345,7 +1216,7 @@ $app->get('/nodered-check_deployment/{object_type}/{object_id}/{deployer_node}',
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 	//curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-	curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+	curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 	
 	$_status=curl_exec ($ch);    	
 	$status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1412,8 +1283,8 @@ $app->get('/nodered-build/{object_id}/{node}/{url}/{version}/{arch}', function (
   $headers[] = 'Cache-Control: no-cache';
 
   $ch = curl_init();
-  //echo "/edge-exchange/v1/orgs/wwsc/services/".$url."_".$version."_".$arch;
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/wwsc/services/".$url."_".$version."_".$arch);
+  //echo "/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/services/".$url."_".$version."_".$arch;
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/services/".$url."_".$version."_".$arch);
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -1425,7 +1296,7 @@ $app->get('/nodered-build/{object_id}/{node}/{url}/{version}/{arch}', function (
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
   
   $services=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1527,7 +1398,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   $object_id = $form_data["object_id"];
   $object_type = $form_data["object_type"];
   
-  //echo("<script>console.log('PHP: [".$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/deploy_".$object_id."/data]". "');</script>");  
+  //echo("<script>console.log('PHP: [".$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/deploy_".$object_id."/data]". "');</script>");  
   $credentials = base64_encode($this['ieam_api']['username'].":".$this['ieam_api']['password']);
   
   //------------------------
@@ -1538,7 +1409,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   $headers[] = 'Cache-Control: no-cache';
 		
   $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/deploy_".$object_id."/data" );  
+  curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/deploy_".$object_id."/data" );  
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
   curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
@@ -1550,7 +1421,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
   //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-  curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+  curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
 	
   $_mms=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1622,7 +1493,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     echo "{";	
     echo "  \"objectID\": \"".$node.".".$url."-deployment\",";
     echo "  \"objectType\": \"deploy.tar\",";
-    echo "  \"destinationOrgID\": \"wwsc\",";
+    echo "  \"destinationOrgID\": \"".$this['ieam_api']['orgid']."\",";
     echo "  \"destinationPolicy\": {";
     echo "	\"properties\": [],";
     echo "	\"constraints\": [";
@@ -1630,7 +1501,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     echo "		],";
     echo "	\"services\": [";
     echo "	  {";
-    echo "		\"orgID\": \"wwsc\",";
+    echo "		\"orgID\": \"".$this['ieam_api']['orgid']."\",";
     echo "		\"arch\": \"".$arch."\",";
     echo "		\"serviceName\": \"".$url."\",";
     echo "		\"version\": \"".$version."\"";
@@ -1684,8 +1555,8 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     $headers[] = 'Cache-Control: no-cache';
     
     $ch = curl_init();
-    //curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/deploy.tar/edgenode01.nodered-v2-deployment" );
-    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/deploy.tar/".$node.".".$url."-deployment" );	
+    //curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/edgenode01.nodered-v2-deployment" );
+    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/".$node.".".$url."-deployment" );	
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
     curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
@@ -1698,7 +1569,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
     //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-    curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+    curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
      
     $mms=curl_exec ($ch);    	
     $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
@@ -1742,7 +1613,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     ob_end_clean();
   
     $ch = curl_init();    
-    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/wwsc/".$object_type."/active-deploy_".$object_id );  
+    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/active-deploy_".$object_id );  
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
     curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
@@ -1755,7 +1626,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
     //curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1 ); 
-    curl_setopt($ch, CURLOPT_CAINFO, "../horizon.crt");
+    curl_setopt($ch, CURLOPT_CAINFO, $_ENV["HZN_ESS_CERT"]);
      
     $mms=curl_exec ($ch);    	
     $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  

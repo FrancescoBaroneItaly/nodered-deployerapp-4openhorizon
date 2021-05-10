@@ -1,8 +1,0 @@
-{
-    "HZN_ORG_ID": "wwsc",
-    "MetadataVars": {
-        "DOCKER_IMAGE_BASE": "us.icr.io/ibm-edgelab/nodered-deployerapp-v1",
-        "SERVICE_NAME": "nodered-deployerapp-v1",
-        "SERVICE_VERSION": "1.0.1"
-    }
-}
