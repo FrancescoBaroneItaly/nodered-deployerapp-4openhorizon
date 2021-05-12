@@ -17,7 +17,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 # Copy application source
 COPY src /var/www/
-COPY horizon.crt /var/www/
 RUN chown -R www-data:www-data /var/www
 
 # Set working directory

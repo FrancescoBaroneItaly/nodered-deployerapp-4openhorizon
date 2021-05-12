@@ -1,0 +1,34 @@
+{
+"label": "$SERVICE_NAME.deployment-policy",
+"description": "Policy for nodered app service",
+"service": {
+  "name": "$SERVICE_NAME",
+  "org": "$HZN_ORG_ID",
+  "arch": "$ARCH",
+  "serviceVersions": [
+	{
+	  "version": "$SERVICE_VERSION",
+	  "priority": {
+		"priority_value": 1,
+		"retries": 2,
+		"retry_durations": 600
+	  },
+	  "upgradePolicy": {}
+	}
+  ],
+  "nodeHealth": {}
+},
+"constraints": [
+  "nodered-deployernode == edgenode03"
+],
+"userInput": [
+  {
+	"serviceOrgid": "$HZN_ORG_ID",
+	"serviceUrl": "$SERVICE_NAME",
+	"serviceArch": "$ARCH",
+	"inputs": [				
+		]
+  }
+  
+]
+}
