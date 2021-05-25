@@ -485,7 +485,7 @@ $app->get('/nodered-data/{node}/{url}/{version}/{arch}', function (Request $requ
   curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-exchange/v1/orgs/".$this['ieam_api']['orgid']."/business/policies/nodered-".$deployer_node."-deployer.deployment.policy" );	
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
   curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-  curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+  curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
   curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
   //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -759,6 +759,7 @@ $app->post('/deployments/add/{node}/{url}/{version}/{arch}', function (Request $
   //echo "OBJECT=".$object_type."/".$object_id;
   $meta = json_encode(array('objectID' => $object_id, 'objectType' => $object_type));
   
+  /*
   $data_array = "[";  
   $i=0;
   foreach ($byte_array as $value) {
@@ -770,6 +771,8 @@ $app->post('/deployments/add/{node}/{url}/{version}/{arch}', function (Request $
 	}
 	
   $data_array=$data_array."]";
+  */
+  $data_array = "[".implode(",", $byte_array)."]";
   
   ob_start();
   
@@ -799,7 +802,7 @@ $app->post('/deployments/add/{node}/{url}/{version}/{arch}', function (Request $
   curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$object_id );
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
   curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-  curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+  curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
   curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
   //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -960,11 +963,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 		unlink($files[$filename]);
 		}
 	//---------------------------------------------
-	
-	//publish object to MMS deployer node
-	$filecontent = file_get_contents("/tmp/deploy.".$rnd_string.".tar");	
-	$byte_array = unpack('C*', $filecontent);
-		
+			
 	//USING MMS
 	ob_start();
 	
@@ -999,6 +998,11 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	$meta = ob_get_contents();
 	ob_end_clean();
 	
+	//publish object to MMS deployer node
+	$filecontent = file_get_contents("/tmp/deploy.".$rnd_string.".tar");	
+	$byte_array = unpack('C*', $filecontent);
+	
+    /*
 	$data_array = "[";  
 	$i=0;
 	foreach ($byte_array as $value) {
@@ -1010,7 +1014,15 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 		}
 		
 	$data_array=$data_array."]";
-	 
+	*/
+	
+	//echo "A";
+	//$data_array=json_encode($byte_array);
+	//echo "B";
+	$data_array = "[".implode(",", $byte_array)."]";
+	
+	//var_dump($data_array);
+	
 	ob_start();
 	 
 	echo "{\"data\": ".$data_array.", \"meta\": ".$meta." }";
@@ -1041,7 +1053,7 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/".$deployer_node.".".$url."-deployment" );	
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-	curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+	curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 	//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -1111,7 +1123,7 @@ $app->put('/nodered-upload_deployment/{deploy_target_link}/data', function (Requ
 		
 	echo "UPLOAD OBJECT=".$object_type."/".$object_id;
 	$meta = json_encode(array('objectID' => $object_id, 'objectType' => $object_type));
-	 
+	/* 
 	$data_array = "[";  
 	$i=0;
 	foreach ($byte_array as $value) {
@@ -1123,7 +1135,9 @@ $app->put('/nodered-upload_deployment/{deploy_target_link}/data', function (Requ
 		}
 		
 	$data_array=$data_array."]";
-	 
+	*/
+	$data_array = "[".implode(",", $byte_array)."]";
+	
 	ob_start();
 	 
 	echo "{\"data\": ".$data_array.", \"meta\": ".$meta." }";
@@ -1152,7 +1166,7 @@ $app->put('/nodered-upload_deployment/{deploy_target_link}/data', function (Requ
 	curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$object_id );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-	curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+	curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 	//curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -1483,10 +1497,6 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   	}
     //---------------------------------------------
     
-    //publish object to MMS deployer node
-    $filecontent = file_get_contents("/tmp/deploy.".$rnd_string.".tar");	
-    $byte_array = unpack('C*', $filecontent);
-  	
     //USING MMS
     ob_start();
     
@@ -1521,6 +1531,10 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     $meta = ob_get_contents();
     ob_end_clean();
     
+	//publish object to MMS deployer node
+    $filecontent = file_get_contents("/tmp/deploy.".$rnd_string.".tar");	
+    $byte_array = unpack('C*', $filecontent);
+    /*
     $data_array = "[";  
     $i=0;
     foreach ($byte_array as $value) {
@@ -1532,7 +1546,9 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   	}
   	
     $data_array=$data_array."]";
-     
+    */
+	$data_array = "[".implode(",", $byte_array)."]";
+	
     ob_start();
      
     echo "{\"data\": ".$data_array.", \"meta\": ".$meta." }";
@@ -1563,7 +1579,7 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/deploy.tar/".$node.".".$url."-deployment" );	
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
     curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -1580,7 +1596,8 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     curl_close ($ch);
   	 
     //echo "STATUS CODE BUILD OBJECT = ".$status_code;  
-  	
+  	sleep(1);
+	
 	//----------------------------------------------
 	//ACTIVE DEPLOY
 	ob_start();
@@ -1595,8 +1612,10 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
   
     //USING MMS    
     //echo "OBJECT=".$object_type."/".$object_id;
-    $meta = json_encode(array('objectID' => "active-deploy_".$object_id, 'objectType' => $object_type));
-  
+	$active_id = "active-deploy_".$object_id;
+    $meta = json_encode(array('objectID' => $active_id, 'objectType' => $object_type));
+    
+	/*
     $data_array = "[";  
     $i=0;
     foreach ($byte_array as $value) {
@@ -1608,7 +1627,9 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
 	  }
 	
     $data_array=$data_array."]";
-  
+	*/
+	$data_array = "[".implode(",", $byte_array)."]";
+	
     ob_start();
   
     echo "{\"data\": ".$data_array.", \"meta\": ".$meta." }";
@@ -1617,10 +1638,10 @@ $app->post('/deployments/activate/{node}/{url}/{version}/{arch}', function (Requ
     ob_end_clean();
   
     $ch = curl_init();    
-    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/active-deploy_".$object_id );  
+    curl_setopt($ch, CURLOPT_URL,$this['ieam_api']['baseurl']."/edge-css/api/v1/objects/".$this['ieam_api']['orgid']."/".$object_type."/".$active_id );  
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post );
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30); //timeout after 30 seconds
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60); //timeout after 30 seconds
     curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     //curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);

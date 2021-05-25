@@ -1,0 +1,19 @@
+{
+"service": {
+      "name": "nodered-deployer",
+      "org": "wwsc",
+      "arch": "amd64",
+      "serviceVersions": [
+        {
+          "version": "1.0.0",
+          "priority": {
+            "priority_value": 1,
+            "retries": 2,
+            "retry_durations": 600
+          },
+          "upgradePolicy": {}
+        }
+      ],
+      "nodeHealth": {}
+    }
+}
