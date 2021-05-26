@@ -1,0 +1,37 @@
+{
+        "org": "$HZN_ORG_ID",
+        "label": "$SERVICE_NAME for $ARCH",
+        "description": "",
+        "public": true,
+        "documentation": "",
+        "url": "$SERVICE_NAME",
+        "version": "$SERVICE_VERSION",
+                        "arch": "$ARCH",
+                        "sharable": "multiple",
+                        "requiredServices": [],
+                        "userInput": [
+                                {
+                                "name": "SERVICE_TYPE",
+                                "label": "Define the type of service",
+                                "type": "string",
+                                "defaultValue": "nodered-deployer"
+                                },
+        {
+            "name": "SERVICE_NAME",
+            "label": "Service Name required during workflow deployment",
+            "type": "string",
+            "defaultValue": "$SERVICE_NAME"
+        }
+                        ],
+                        "deployment": {
+                                "services": {
+                                        "$SERVICE_NAME": {
+                                                "image": "${DOCKER_IMAGE_BASE}_$ARCH:$SERVICE_VERSION",
+                                                "privileged": false,
+                                                "ports": [{"HostPort":"5000:80/tcp","HostIP":"0.0.0.0"}],
+						"network": "*"
+                                        }
+                                }
+                        }
+                }
+

@@ -893,6 +893,12 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
   $_mms=curl_exec ($ch);    	
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);   //get status code  
   curl_close ($ch);
+   
+  $hostname = $_SERVER['SERVER_NAME'];
+  $port = $_SERVER['SERVER_PORT'];
+  
+  echo("<script>console.log('PHP: " . $hostname ."-". $port . "');</script>");
+  //echo "HOSTNAME ".$hostname.":".$port;
   
   //echo("<script>console.log('PHP: " . $status_code . "');</script>");
   //echo "STATUS CODE =".$status_code;
@@ -931,7 +937,8 @@ $app->get('/nodered-prebuild/{object_id}/{node}/{url}/{version}/{arch}', functio
 								 'DEPLOY_CREDENTIALS'=> 'flows_cred.json',
 								 'BUILD_MODE' => 'true',
 								 'DEPLOY_TARGET_LINK' => base64_encode($deploy_target_link),								 
-								 'DEPLOY_TARGET_PORT' => '5000',
+								 'DEPLOY_TARGET_PORT' => $port,
+								 'DEPLOY_TARGET_HOST' => $hostname,
 								 'DEPLOY_INITIAL' => base64_encode($_mms)
 								 ));
 	

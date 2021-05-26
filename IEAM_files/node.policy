@@ -1,8 +1,8 @@
 {
 "properties": [		
 { "name": "nodered-deployerapp", "value": "1" },
-{ "name": "nodered-deployernode", "value": "edgenode03" },
-{ "name": "nodered-deployment", "value": "edgenode03" },
+{ "name": "nodered-deployernode", "value": "edgelab01" },
+{ "name": "nodered-deployment", "value": "edgelab01" },
 ],
 "constraints": []
 }

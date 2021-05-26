@@ -1,0 +1,8 @@
+{
+    "HZN_ORG_ID": "birex-sandbox",
+    "MetadataVars": {
+        "DOCKER_IMAGE_BASE": "us.icr.io/ibm-edgelab/nodered-deployerapp",
+        "SERVICE_NAME": "nodered-deployerapp",
+        "SERVICE_VERSION": "1.0.0"
+    }
+}
